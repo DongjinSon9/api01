@@ -45,21 +45,28 @@ public class CustomSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception{
 
+//        인증관리자 생성을 위한 빌더 생성
         AuthenticationManagerBuilder authenticationManagerBuilder =
                 http.getSharedObject(AuthenticationManagerBuilder.class);
 
+//        인증 관리자 빌더를 사용하여 서비스 설정과 passwordEncoder 성정
         authenticationManagerBuilder
                 .userDetailsService(apiUserDetailsService)
                         .passwordEncoder(passwordEncoder());
 
+//        인증관리자 빌더를 통해 인증관리자를 생성
         AuthenticationManager authenticationManager =
                 authenticationManagerBuilder.build();
 
+//        http에 인증관리자 설정
         http.authenticationManager(authenticationManager);
 
+//        APILoginFilter를 불러올 때 사용할 URL 설정
         APILoginFilter apiLoginFilter = new APILoginFilter("/generateToken");
+//        APILoginFilter가 어떤 인증 관리자를 사용할 지 설정
         apiLoginFilter.setAuthenticationManager(authenticationManager);
 
+//        APILoginFilter 전에 실행할 필터를 설정
         http.addFilterBefore(apiLoginFilter, UsernamePasswordAuthenticationFilter.class);
 
 //        csrf 설정 끄기
