@@ -18,6 +18,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.zerock.api01.security.APIUserDetailsService;
 import org.zerock.api01.security.filter.APILoginFilter;
+import org.zerock.api01.security.filter.TokenCheckFilter;
+import org.zerock.api01.security.handler.APILoginSuccessHandler;
+import org.zerock.api01.util.JWTUtil;
 
 @Configuration
 @Log4j2
@@ -27,6 +30,8 @@ import org.zerock.api01.security.filter.APILoginFilter;
 public class CustomSecurityConfig {
 
     private final APIUserDetailsService apiUserDetailsService;
+
+    private final JWTUtil jwtUtil;
 
 //    비밀번호 암호화 설정
     @Bean
@@ -44,6 +49,8 @@ public class CustomSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception{
+
+        log.info("---------------------------------configure-----------------------------------");
 
 //        인증관리자 생성을 위한 빌더 생성
         AuthenticationManagerBuilder authenticationManagerBuilder =
@@ -66,8 +73,16 @@ public class CustomSecurityConfig {
 //        APILoginFilter가 어떤 인증 관리자를 사용할 지 설정
         apiLoginFilter.setAuthenticationManager(authenticationManager);
 
+        APILoginSuccessHandler successHandler = new APILoginSuccessHandler(jwtUtil);
+        apiLoginFilter.setAuthenticationSuccessHandler(successHandler);
+
 //        APILoginFilter 전에 실행할 필터를 설정
         http.addFilterBefore(apiLoginFilter, UsernamePasswordAuthenticationFilter.class);
+
+        http.addFilterBefore(
+                tokenCheckFilter(jwtUtil),
+                UsernamePasswordAuthenticationFilter.class
+        );
 
 //        csrf 설정 끄기
         http.csrf().disable();
@@ -75,6 +90,10 @@ public class CustomSecurityConfig {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         return http.build();
+    }
+
+    private TokenCheckFilter tokenCheckFilter(JWTUtil jwtUtil) {
+        return new TokenCheckFilter(jwtUtil);
     }
 
 }
